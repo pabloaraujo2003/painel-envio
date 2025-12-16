@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev:vite": "vite",
-    "dev:api": "node server/index.js",
+    "dev:api": "node --env-file=server/.env server/index.js",
     "dev": "concurrently \"npm run dev:vite\" \"npm run dev:api\"",
     "build": "vite build",
     "lint": "eslint .",
