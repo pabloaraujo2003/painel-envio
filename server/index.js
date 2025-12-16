@@ -8,11 +8,22 @@ const COMTELE_KEY = process.env.COMTELE_AUTH_KEY;
 const COMTELE_URL = "https://sms.comtele.com.br/api/v2/send";
 
 async function enviarSMS({ to, message, sender }) {
+  if (!COMTELE_KEY) throw new Error("COMTELE_AUTH_KEY não configurada");
+
+  // normaliza: só dígitos
+  const phone = String(to ?? "").replace(/\D/g, "");
+  const content = String(message ?? "").trim();
+
+  if (!phone) throw Object.assign(new Error("Número inválido/vazio"), { details: { to } });
+  if (!content) throw Object.assign(new Error("Mensagem vazia"), { details: { message } });
+
   const body = {
-    Receivers: to,
-    Content: message,
-    ...(sender ? { Sender: sender } : {})
+    Receivers: phone,
+    Content: content,
+    ...(sender ? { Sender: String(sender).trim() } : {}) // ✅ só se existir
   };
+
+  console.log("➡️ Comtele REQ:", body);
 
   const res = await fetch(COMTELE_URL, {
     method: "POST",
@@ -27,28 +38,39 @@ async function enviarSMS({ to, message, sender }) {
   let data;
   try { data = JSON.parse(text); } catch { data = { raw: text }; }
 
-  if (!res.ok) {
+  console.log("⬅️ Comtele RES:", res.status, data);
+
+  // Comtele pode responder 200 e Success:false, então trate os dois
+  if (!res.ok || data?.Success === false) {
     const err = new Error(`Comtele HTTP ${res.status}`);
     err.details = data;
     throw err;
   }
+
   return data;
 }
 
 app.post("/api/send-1-1", async (req, res) => {
   const { items, sender } = req.body;
 
-  if (!COMTELE_KEY) return res.status(500).json({ error: "COMTELE_AUTH_KEY não configurada" });
-  if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: "items inválido" });
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: "items inválido" });
+  }
 
   const resultados = [];
   for (let i = 0; i < items.length; i++) {
     const { to, message } = items[i];
+
     try {
       const r = await enviarSMS({ to, message, sender });
       resultados.push({ index: i, to, ok: true, response: r });
     } catch (e) {
-      resultados.push({ index: i, to, ok: false, error: e.details || String(e) });
+      resultados.push({
+        index: i,
+        to,
+        ok: false,
+        error: e?.details ?? e?.message ?? String(e)
+      });
     }
   }
 
