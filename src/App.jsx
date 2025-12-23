@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
+import Papa from "papaparse";
 
 function parseLines(text) {
   return text
@@ -14,6 +15,7 @@ function clamp(n, min, max) {
 }
 
 export default function App() {
+  const fileInputRef = useRef(null);
   const [linhasText, setLinhasText] = useState("");
   const [cmdsText, setCmdsText] = useState("");
   const [sender, setSender] = useState("");
@@ -44,7 +46,7 @@ export default function App() {
 
   const badge = useMemo(() => {
     if (totalLinhas === 0 && totalCmds === 0)
-      return { tone: "neutral", icon: "ℹ️", text: "Cole linhas e comandos" };
+      return { tone: "neutral", icon: "ℹ️", text: "Cole ou importe os dados" };
 
     if (!match) {
       return {
@@ -77,6 +79,30 @@ export default function App() {
     }
   }
 
+  function handleFileImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const toLines = results.data.map(row => row.to || "").join("\n");
+        const messageLines = results.data.map(row => row.message || "").join("\n");
+        
+        setLinhasText(toLines);
+        setCmdsText(messageLines);
+      },
+      error: (error) => {
+        console.error("Erro ao processar CSV:", error);
+        alert("Ocorreu um erro ao processar o arquivo CSV.");
+      }
+    });
+    
+    // Reset file input para permitir re-upload do mesmo arquivo
+    event.target.value = null;
+  }
+
   function limpar() {
     setLinhasText("");
     setCmdsText("");
@@ -92,7 +118,7 @@ export default function App() {
         <div className="header__left">
           <h1 className="title">Painel de Envio 1:1 (Comtele)</h1>
           <p className="subtitle">
-            Cole as <b>linhas</b> e os <b>comandos</b> (um por linha). A ordem é respeitada.
+            Cole as <b>linhas</b> e os <b>comandos</b> ou <b>importe um arquivo CSV</b>.
           </p>
         </div>
 
@@ -165,6 +191,21 @@ export default function App() {
           </label>
 
           <div className="spacer" />
+          
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileImport}
+            style={{ display: "none" }}
+            accept=".csv, text/csv"
+          />
+          <button
+            className="btn"
+            onClick={() => fileInputRef.current.click()}
+            disabled={sending}
+          >
+            Importar CSV
+          </button>
 
           <button className="btn btn--ghost" onClick={limpar} disabled={sending && !result}>
             Limpar

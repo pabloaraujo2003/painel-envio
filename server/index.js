@@ -57,22 +57,36 @@ app.post("/api/send-1-1", async (req, res) => {
     return res.status(400).json({ error: "items inválido" });
   }
 
+  const CHUNK_SIZE = 10; // Enviar em lotes de 10
   const resultados = [];
-  for (let i = 0; i < items.length; i++) {
-    const { to, message } = items[i];
 
-    try {
-      const r = await enviarSMS({ to, message, sender });
-      resultados.push({ index: i, to, ok: true, response: r });
-    } catch (e) {
-      resultados.push({
-        index: i,
-        to,
-        ok: false,
-        error: e?.details ?? e?.message ?? String(e)
-      });
-    }
+  for (let i = 0; i < items.length; i += CHUNK_SIZE) {
+    const chunk = items.slice(i, i + CHUNK_SIZE);
+    
+    console.log(`Processando lote de ${chunk.length} (iniciando do índice ${i})`);
+
+    const promises = chunk.map(async (item, chunkIndex) => {
+      const originalIndex = i + chunkIndex;
+      const { to, message } = item;
+      try {
+        const r = await enviarSMS({ to, message, sender });
+        return { index: originalIndex, to, ok: true, response: r };
+      } catch (e) {
+        return {
+          index: originalIndex,
+          to,
+          ok: false,
+          error: e?.details ?? e?.message ?? String(e)
+        };
+      }
+    });
+
+    const chunkResults = await Promise.all(promises);
+    resultados.push(...chunkResults);
   }
+
+  // Ordena os resultados pela ordem original
+  resultados.sort((a, b) => a.index - b.index);
 
   res.json({
     total: items.length,
@@ -83,16 +97,12 @@ app.post("/api/send-1-1", async (req, res) => {
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// Substitua pela sua chave de API
-const genAI = new GoogleGenerativeAI("AIzaSyBsrfzFxDplDtWGT6BG5vZv0SZ-_eyXBjc");
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+const genAI = GOOGLE_API_KEY ? new GoogleGenerativeAI(GOOGLE_API_KEY) : null;
+const model = genAI ? genAI.getGenerativeModel({ model: "gemini-1.5-flash" }) : null;
 
-async function run() {
-  const prompt = "Explique como funciona uma API em uma frase.";
-  const result = await model.generateContent(prompt);
-  console.log(result.response.text());
+if (!GOOGLE_API_KEY) {
+  console.warn("⚠️ GOOGLE_API_KEY não configurada. Funcionalidades de IA estarão desativadas.");
 }
-
-run();
 
 app.listen(PORT, () => console.log(`API on http://localhost:${PORT}`));
