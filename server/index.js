@@ -81,4 +81,18 @@ app.post("/api/send-1-1", async (req, res) => {
   });
 });
 
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+// Substitua pela sua chave de API
+const genAI = new GoogleGenerativeAI("AIzaSyBsrfzFxDplDtWGT6BG5vZv0SZ-_eyXBjc");
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+async function run() {
+  const prompt = "Explique como funciona uma API em uma frase.";
+  const result = await model.generateContent(prompt);
+  console.log(result.response.text());
+}
+
+run();
+
 app.listen(PORT, () => console.log(`API on http://localhost:${PORT}`));
