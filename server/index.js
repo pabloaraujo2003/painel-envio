@@ -1,4 +1,5 @@
 import express from "express";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const app = express();
 app.use(express.json());
@@ -89,13 +90,11 @@ app.post("/api/send-1-1", async (req, res) => {
   resultados.sort((a, b) => a.index - b.index);
 
   res.json({
-    total: items.length,
+    total:.length,
     enviados: resultados.filter(r => r.ok).length,
     resultados
   });
 });
-
-const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const genAI = GOOGLE_API_KEY ? new GoogleGenerativeAI(GOOGLE_API_KEY) : null;
