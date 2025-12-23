@@ -1,5 +1,4 @@
 import express from "express";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const app = express();
 app.use(express.json());
@@ -90,18 +89,11 @@ app.post("/api/send-1-1", async (req, res) => {
   resultados.sort((a, b) => a.index - b.index);
 
   res.json({
-    total:.length,
+    total: items.length,
     enviados: resultados.filter(r => r.ok).length,
     resultados
   });
 });
 
-const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
-const genAI = GOOGLE_API_KEY ? new GoogleGenerativeAI(GOOGLE_API_KEY) : null;
-const model = genAI ? genAI.getGenerativeModel({ model: "gemini-1.5-flash" }) : null;
-
-if (!GOOGLE_API_KEY) {
-  console.warn("⚠️ GOOGLE_API_KEY não configurada. Funcionalidades de IA estarão desativadas.");
-}
-
 app.listen(PORT, () => console.log(`API on http://localhost:${PORT}`));
+
