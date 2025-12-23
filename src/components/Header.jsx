@@ -1,4 +1,4 @@
-export default function Header({ badge }) {
+export default function Header({ badge, theme, toggleTheme }) {
   return (
     <header className="header">
       <div className="header__left">
@@ -10,10 +10,21 @@ export default function Header({ badge }) {
       </div>
 
       <div className="header__right">
+        {/* BADGE */}
         <span className={`badge badge--${badge.tone}`}>
           <span className="badge__icon">{badge.icon}</span>
           <span className="badge__text">{badge.text}</span>
         </span>
+
+        {/* 👉 BOTÃO DE TEMA */}
+        <button
+          className="btn btn--ghost"
+          onClick={toggleTheme}
+          aria-label="Alternar tema"
+          style={{ marginLeft: "12px" }}
+        >
+          {theme === "dark" ? "☀️ Claro" : "🌙 Escuro"}
+        </button>
       </div>
     </header>
   );

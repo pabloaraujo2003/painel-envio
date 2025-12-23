@@ -2,6 +2,7 @@ import { useMemo, useState, useRef, useEffect } from "react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { parseLines } from "./utils";
+
 import Header from "./components/Header";
 import TextareaCard from "./components/TextareaCard";
 import Controls from "./components/Controls";
@@ -10,6 +11,7 @@ import ResultsTable from "./components/ResultsTable";
 
 export default function App() {
   const fileInputRef = useRef(null);
+
   const [linhasText, setLinhasText] = useState("");
   const [cmdsText, setCmdsText] = useState("");
   const [sender, setSender] = useState("");
@@ -18,9 +20,11 @@ export default function App() {
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null);
 
+  /* ======================
+     THEME
+  ====================== */
   const [theme, setTheme] = useState(() => {
-    const savedTheme = localStorage.getItem("theme");
-    return savedTheme || "dark";
+    return localStorage.getItem("theme") || "dark";
   });
 
   useEffect(() => {
@@ -28,16 +32,18 @@ export default function App() {
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme((prevTheme) => (prevTheme === "light" ? "dark" : "light"));
-  };
+  function toggleTheme() {
+    setTheme((t) => (t === "light" ? "dark" : "light"));
+  }
 
+  /* ======================
+     DATA
+  ====================== */
   const linhas = useMemo(() => parseLines(linhasText), [linhasText]);
   const comandos = useMemo(() => parseLines(cmdsText), [cmdsText]);
 
   const totalLinhas = linhas.length;
   const totalCmds = comandos.length;
-
   const match = totalLinhas > 0 && totalLinhas === totalCmds;
   const diff = totalLinhas - totalCmds;
 
@@ -60,7 +66,10 @@ export default function App() {
       return {
         tone: "danger",
         icon: "⚠️",
-        text: diff > 0 ? `Faltam ${Math.abs(diff)} comandos` : `Faltam ${Math.abs(diff)} linhas`,
+        text:
+          diff > 0
+            ? `Faltam ${Math.abs(diff)} comandos`
+            : `Faltam ${Math.abs(diff)} linhas`,
       };
     }
 
@@ -87,64 +96,6 @@ export default function App() {
     }
   }
 
-  function handleFileImport(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const fileContent = e.target.result;
-        let data = [];
-        if (file.name.endsWith(".csv")) {
-          const parsed = Papa.parse(fileContent, { skipEmptyLines: true });
-          if (parsed.errors.length) {
-            throw new Error(parsed.errors.map(err => err.message).join(', '));
-          }
-          data = parsed.data;
-        } else if (file.name.endsWith(".xlsx")) {
-          const workbook = XLSX.read(fileContent, { type: "binary" });
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-          data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-        } else {
-          alert("Formato de arquivo não suportado. Use .csv ou .xlsx.");
-          return;
-        }
-
-        if (data.length === 0) {
-          alert("O arquivo está vazio ou em um formato não reconhecido.");
-          return;
-        }
-
-        const toLines = data.map((row) => row[0] || "").join("\n");
-        const messageLines = data.map((row) => row[1] || "").join("\n");
-
-        setLinhasText(toLines);
-        setCmdsText(messageLines);
-
-      } catch (error) {
-        console.error("Erro ao processar arquivo:", error);
-        alert(`Ocorreu um erro ao processar o arquivo: ${error.message}`);
-      } finally {
-        event.target.value = null;
-      }
-    };
-
-    reader.onerror = (error) => {
-      console.error("Erro ao ler o arquivo:", error);
-      alert("Ocorreu um erro ao ler o arquivo.");
-    };
-
-    if (file.name.endsWith(".csv")) {
-      reader.readAsText(file);
-    } else if (file.name.endsWith(".xlsx")) {
-      reader.readAsBinaryString(file);
-    } else {
-        alert("Formato de arquivo não suportado. Use .csv ou .xlsx.");
-    }
-  }
-
   function limpar() {
     setLinhasText("");
     setCmdsText("");
@@ -164,16 +115,12 @@ export default function App() {
           count={totalLinhas}
           value={linhasText}
           onChange={(e) => setLinhasText(e.target.value)}
-          placeholder={"Ex:\n5511999999999\n5511988888888"}
-          hint="Dica: cole direto da coluna “LINHA” do Sheets."
         />
         <TextareaCard
           title="Comandos"
           count={totalCmds}
           value={cmdsText}
           onChange={(e) => setCmdsText(e.target.value)}
-          placeholder={"Ex:\nSET,APN,internet\nSET,SERVER,1.2.3.4,9000"}
-          hint="Dica: cole direto da coluna “CMD” do Sheets."
         />
       </section>
 
@@ -186,7 +133,6 @@ export default function App() {
         result={result}
         match={match}
         items={items}
-        handleFileImport={handleFileImport}
         limpar={limpar}
         enviar={enviar}
         fileInputRef={fileInputRef}
@@ -205,10 +151,6 @@ export default function App() {
         failCount={failCount}
         items={items}
       />
-
-      <footer className="footer">
-        Segurança: a chave da Comtele fica só no backend (server/index.js via .env).
-      </footer>
     </div>
   );
 }

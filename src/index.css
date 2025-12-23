@@ -235,3 +235,55 @@ html[data-theme='light'] .small {
 html[data-theme='light'] .footer {
     color: rgba(26, 22, 37, 0.55);
 }
+
+
+/* ======================
+   THEME TOKENS
+====================== */
+:root{
+  --bg: #1A1625;
+  --card: #221C35;
+  --border: #3C3358;
+  --primary-accent: #9D5DDE;
+  --text: #EAE0FF;
+  --muted: rgba(234, 224, 255, 0.65);
+  --danger: #ff5a5a;
+  --success: #2ad57a;
+  --radius: 14px;
+
+  color-scheme: dark;
+}
+
+html[data-theme='light']{
+  --bg: #F4F2F8;
+  --card: #FFFFFF;
+  --border: #E0D8F0;
+  --primary-accent: #8247E5;
+  --text: #1A1625;
+  --muted: rgba(26, 22, 37, 0.65);
+
+  color-scheme: light;
+}
+
+/* ======================
+   BASE
+====================== */
+*{ box-sizing: border-box; }
+
+html, body{ height: 100%; }
+
+body{
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  transition: background .2s ease, color .2s ease;
+}
+
+/* ======================
+   A11Y – foco visível
+====================== */
+:focus-visible{
+  outline: 2px solid var(--primary-accent);
+  outline-offset: 2px;
+}
