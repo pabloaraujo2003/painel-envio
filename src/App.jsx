@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { parseLines } from "./utils";
@@ -17,6 +17,20 @@ export default function App() {
 
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null);
+
+  const [theme, setTheme] = useState(() => {
+    const savedTheme = localStorage.getItem("theme");
+    return savedTheme || "dark";
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prevTheme) => (prevTheme === "light" ? "dark" : "light"));
+  };
 
   const linhas = useMemo(() => parseLines(linhasText), [linhasText]);
   const comandos = useMemo(() => parseLines(cmdsText), [cmdsText]);
@@ -142,7 +156,7 @@ export default function App() {
 
   return (
     <div className="page">
-      <Header badge={badge} />
+      <Header badge={badge} theme={theme} toggleTheme={toggleTheme} />
 
       <section className="grid2">
         <TextareaCard

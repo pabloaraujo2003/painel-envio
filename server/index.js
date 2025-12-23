@@ -1,16 +1,19 @@
 import express from "express";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+// Se seu Node for < 18, descomente:
+// import fetch from "node-fetch";
 
 const app = express();
 app.use(express.json());
 
 const PORT = process.env.PORT || 3001;
+
 const COMTELE_KEY = process.env.COMTELE_AUTH_KEY;
 const COMTELE_URL = "https://sms.comtele.com.br/api/v2/send";
 
 async function enviarSMS({ to, message, sender }) {
   if (!COMTELE_KEY) throw new Error("COMTELE_AUTH_KEY não configurada");
 
-  // normaliza: só dígitos
   const phone = String(to ?? "").replace(/\D/g, "");
   const content = String(message ?? "").trim();
 
@@ -20,10 +23,8 @@ async function enviarSMS({ to, message, sender }) {
   const body = {
     Receivers: phone,
     Content: content,
-    ...(sender ? { Sender: String(sender).trim() } : {}) // ✅ só se existir
+    ...(sender ? { Sender: String(sender).trim() } : {})
   };
-
-  console.log("➡️ Comtele REQ:", body);
 
   const res = await fetch(COMTELE_URL, {
     method: "POST",
@@ -38,9 +39,6 @@ async function enviarSMS({ to, message, sender }) {
   let data;
   try { data = JSON.parse(text); } catch { data = { raw: text }; }
 
-  console.log("⬅️ Comtele RES:", res.status, data);
-
-  // Comtele pode responder 200 e Success:false, então trate os dois
   if (!res.ok || data?.Success === false) {
     const err = new Error(`Comtele HTTP ${res.status}`);
     err.details = data;
@@ -57,36 +55,22 @@ app.post("/api/send-1-1", async (req, res) => {
     return res.status(400).json({ error: "items inválido" });
   }
 
-  const CHUNK_SIZE = 10; // Enviar em lotes de 10
   const resultados = [];
+  for (let i = 0; i < items.length; i++) {
+    const { to, message } = items[i];
 
-  for (let i = 0; i < items.length; i += CHUNK_SIZE) {
-    const chunk = items.slice(i, i + CHUNK_SIZE);
-    
-    console.log(`Processando lote de ${chunk.length} (iniciando do índice ${i})`);
-
-    const promises = chunk.map(async (item, chunkIndex) => {
-      const originalIndex = i + chunkIndex;
-      const { to, message } = item;
-      try {
-        const r = await enviarSMS({ to, message, sender });
-        return { index: originalIndex, to, ok: true, response: r };
-      } catch (e) {
-        return {
-          index: originalIndex,
-          to,
-          ok: false,
-          error: e?.details ?? e?.message ?? String(e)
-        };
-      }
-    });
-
-    const chunkResults = await Promise.all(promises);
-    resultados.push(...chunkResults);
+    try {
+      const r = await enviarSMS({ to, message, sender });
+      resultados.push({ index: i, to, ok: true, response: r });
+    } catch (e) {
+      resultados.push({
+        index: i,
+        to,
+        ok: false,
+        error: e?.details ?? e?.message ?? String(e)
+      });
+    }
   }
-
-  // Ordena os resultados pela ordem original
-  resultados.sort((a, b) => a.index - b.index);
 
   res.json({
     total: items.length,
@@ -95,5 +79,18 @@ app.post("/api/send-1-1", async (req, res) => {
   });
 });
 
-app.listen(PORT, () => console.log(`API on http://localhost:${PORT}`));
+// Gemini (em endpoint, não no boot)
+app.post("/api/gemini", async (req, res) => {
+  try {
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
+    const prompt = req.body?.prompt ?? "Explique como funciona uma API em uma frase.";
+    const result = await model.generateContent(String(prompt));
+    res.json({ text: result.response.text() });
+  } catch (err) {
+    res.status(500).json({ error: err?.message ?? String(err) });
+  }
+});
+
+app.listen(PORT, () => console.log(`API on http://localhost:${PORT}`));

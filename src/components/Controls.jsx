@@ -1,4 +1,4 @@
-import { clamp } from "./utils";
+import { clamp } from "../utils.js";
 
 export default function Controls({
   sender,
