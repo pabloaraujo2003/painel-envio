@@ -1,9 +1,29 @@
 import express from "express";
+import cors from "cors";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 // Se seu Node for < 18, descomente:
 // import fetch from "node-fetch";
 
 const app = express();
+
+// Configuração do CORS
+const allowedOrigins = [
+  'https://painel-envio.vercel.app',
+  'http://localhost:3000', // Para desenvolvimento local do frontend
+];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Permite requisições sem 'origin' (ex: Postman) ou de origens na lista
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 const PORT = process.env.PORT || 3001;
