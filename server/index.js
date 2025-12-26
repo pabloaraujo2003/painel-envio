@@ -1,45 +1,52 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import fetch from "node-fetch"; // GARANTE fetch no Render
 import { GoogleGenerativeAI } from "@google/generative-ai";
-// Se seu Node for < 18, descomente:
-// import fetch from "node-fetch";
 
 const app = express();
 
-// Configuração do CORS
-const allowedOrigins = [
-  'https://painel-envio.vercel.app',
-  'http://localhost:3000', // Para desenvolvimento local do frontend
-];
+/**
+ * =========================
+ * CORS (CORRIGIDO)
+ * =========================
+ * - Aceita frontend em produção (Vercel)
+ * - Aceita localhost (Vite)
+ * - Não quebra preview deploy da Vercel
+ */
+app.use(cors({
+  origin: true,
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
 
-const corsOptions = {
-  origin: (origin, callback) => {
-    // Permite requisições sem 'origin' (ex: Postman) ou de origens na lista
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  }
-};
-
-app.use(cors(corsOptions));
 app.use(express.json());
 
 const PORT = process.env.PORT || 3001;
 
+/**
+ * =========================
+ * COMTELE
+ * =========================
+ */
 const COMTELE_KEY = process.env.COMTELE_AUTH_KEY;
 const COMTELE_URL = "https://sms.comtele.com.br/api/v2/send";
 
 async function enviarSMS({ to, message, sender }) {
-  if (!COMTELE_KEY) throw new Error("COMTELE_AUTH_KEY não configurada");
+  if (!COMTELE_KEY) {
+    throw new Error("COMTELE_AUTH_KEY não configurada");
+  }
 
   const phone = String(to ?? "").replace(/\D/g, "");
   const content = String(message ?? "").trim();
 
-  if (!phone) throw Object.assign(new Error("Número inválido/vazio"), { details: { to } });
-  if (!content) throw Object.assign(new Error("Mensagem vazia"), { details: { message } });
+  if (!phone) {
+    throw new Error("Número inválido");
+  }
+
+  if (!content) {
+    throw new Error("Mensagem vazia");
+  }
 
   const body = {
     Receivers: phone,
@@ -50,7 +57,7 @@ async function enviarSMS({ to, message, sender }) {
   const res = await fetch(COMTELE_URL, {
     method: "POST",
     headers: {
-      "content-type": "application/json",
+      "Content-Type": "application/json",
       "auth-key": COMTELE_KEY
     },
     body: JSON.stringify(body)
@@ -58,10 +65,15 @@ async function enviarSMS({ to, message, sender }) {
 
   const text = await res.text();
   let data;
-  try { data = JSON.parse(text); } catch { data = { raw: text }; }
+
+  try {
+    data = JSON.parse(text);
+  } catch {
+    data = { raw: text };
+  }
 
   if (!res.ok || data?.Success === false) {
-    const err = new Error(`Comtele HTTP ${res.status}`);
+    const err = new Error(`Erro Comtele (${res.status})`);
     err.details = data;
     throw err;
   }
@@ -69,6 +81,11 @@ async function enviarSMS({ to, message, sender }) {
   return data;
 }
 
+/**
+ * =========================
+ * SMS 1 A 1
+ * =========================
+ */
 app.post("/api/send-1-1", async (req, res) => {
   const { items, sender } = req.body;
 
@@ -77,12 +94,18 @@ app.post("/api/send-1-1", async (req, res) => {
   }
 
   const resultados = [];
+
   for (let i = 0; i < items.length; i++) {
     const { to, message } = items[i];
 
     try {
       const r = await enviarSMS({ to, message, sender });
-      resultados.push({ index: i, to, ok: true, response: r });
+      resultados.push({
+        index: i,
+        to,
+        ok: true,
+        response: r
+      });
     } catch (e) {
       resultados.push({
         index: i,
@@ -100,18 +123,35 @@ app.post("/api/send-1-1", async (req, res) => {
   });
 });
 
-// Gemini (em endpoint, não no boot)
+/**
+ * =========================
+ * GEMINI
+ * =========================
+ */
 app.post("/api/gemini", async (req, res) => {
   try {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const prompt = req.body?.prompt ?? "Explique como funciona uma API em uma frase.";
+    const prompt =
+      req.body?.prompt ??
+      "Explique como funciona uma API em uma frase.";
+
     const result = await model.generateContent(String(prompt));
+
     res.json({ text: result.response.text() });
   } catch (err) {
-    res.status(500).json({ error: err?.message ?? String(err) });
+    res.status(500).json({
+      error: err?.message ?? String(err)
+    });
   }
 });
 
-app.listen(PORT, () => console.log(`API on http://localhost:${PORT}`));
+/**
+ * =========================
+ * START
+ * =========================
+ */
+app.listen(PORT, () => {
+  console.log(`✅ API rodando na porta ${PORT}`);
+});
