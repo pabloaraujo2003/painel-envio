@@ -1,6 +1,7 @@
 import { useMemo, useState, useRef, useEffect } from "react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
+import { fetchData } from "./services/api";
 import { parseLines } from "./utils";
 
 import Header from "./components/Header";
@@ -19,6 +20,28 @@ export default function App() {
 
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null);
+  const [apiStatus, setApiStatus] = useState("loading"); // "loading", "ok", "error"
+
+  /* ======================
+     API
+  ====================== */
+  useEffect(() => {
+    const testApi = async () => {
+      try {
+        await fetchData("/gemini", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: "oi" }),
+        });
+        setApiStatus("ok");
+      } catch (error) {
+        setApiStatus("error");
+        console.error("API connection test failed:", error);
+      }
+    };
+
+    testApi();
+  }, []);
 
   /* ======================
      THEME
@@ -107,7 +130,12 @@ export default function App() {
 
   return (
     <div className="page">
-      <Header badge={badge} theme={theme} toggleTheme={toggleTheme} />
+      <Header
+        badge={badge}
+        theme={theme}
+        toggleTheme={toggleTheme}
+        apiStatus={apiStatus}
+      />
 
       <section className="grid2">
         <TextareaCard

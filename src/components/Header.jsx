@@ -1,8 +1,13 @@
-export default function Header({ badge, theme, toggleTheme }) {
+export default function Header({ badge, theme, toggleTheme, apiStatus }) {
   return (
     <header className="header">
       <div className="header__left">
-        <h1 className="title">Painel de Envio 1:1 (Comtele)</h1>
+        <div className="title-area">
+          <h1 className="title">Painel de Envio 1:1 (Comtele)</h1>
+          <span className={`api-status api-status--${apiStatus}`}>
+            API: {apiStatus}
+          </span>
+        </div>
         <p className="subtitle">
           Cole as <b>linhas</b> e os <b>comandos</b> ou{" "}
           <b>importe um arquivo</b>.

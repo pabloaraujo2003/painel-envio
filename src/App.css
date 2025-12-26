@@ -40,3 +40,38 @@
 .read-the-docs {
   color: #888;
 }
+
+.title-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.api-status {
+  font-size: 0.8em;
+  font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.api-status::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+.api-status--loading {
+  color: #f59e0b; /* amber-500 */
+}
+.api-status--ok {
+  color: #10b981; /* emerald-500 */
+}
+.api-status--error {
+  color: #ef4444; /* red-500 */
+}
