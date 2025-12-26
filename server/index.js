@@ -1,8 +1,10 @@
 import "dotenv/config";
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import fetch from "node-fetch"; // GARANTE fetch no Render
 import { GoogleGenerativeAI } from "@google/generative-ai";
+
 
 const app = express();
 
