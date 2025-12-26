@@ -1,5 +1,6 @@
 import { useMemo, useState, useRef, useEffect } from "react";
 import Papa from "papaparse";
+import * as XLSX from "xlsx";
 import { parseLines } from "./utils";
 
 import Header from "./components/Header";

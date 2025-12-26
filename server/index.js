@@ -13,7 +13,7 @@ const app = express();
  */
 const allowedOrigins = [
   "https://painel-envio.vercel.app/", // Substitua pelo domínio do Vercel
-  "http://localhost:5173", // localhost Vite
+  "http://localhost:5173", // localhost Vitegit add index.js
 ];
 
 app.use(cors({
