@@ -1,7 +1,5 @@
 import { useMemo, useState, useRef, useEffect } from "react";
 import Papa from "papaparse";
-import * as XLSX from "xlsx";
-import { fetchData } from "./services/api";
 import { parseLines } from "./utils";
 
 import Header from "./components/Header";
@@ -22,13 +20,15 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [apiStatus, setApiStatus] = useState("loading"); // "loading", "ok", "error"
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   /* ======================
-     API
+     TESTE DE API
   ====================== */
   useEffect(() => {
     const testApi = async () => {
       try {
-        await fetchData("/gemini", {
+        await fetch(`${API_URL}/api/gemini`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ prompt: "oi" }),
@@ -41,14 +41,12 @@ export default function App() {
     };
 
     testApi();
-  }, []);
+  }, [API_URL]);
 
   /* ======================
      THEME
   ====================== */
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("theme") || "dark";
-  });
+  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "dark");
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -89,22 +87,22 @@ export default function App() {
       return {
         tone: "danger",
         icon: "⚠️",
-        text:
-          diff > 0
-            ? `Faltam ${Math.abs(diff)} comandos`
-            : `Faltam ${Math.abs(diff)} linhas`,
+        text: diff > 0 ? `Faltam ${Math.abs(diff)} comandos` : `Faltam ${Math.abs(diff)} linhas`,
       };
     }
 
     return { tone: "success", icon: "✅", text: "Pronto para enviar (1:1)" };
   }, [totalLinhas, totalCmds, match, diff]);
 
+  /* ======================
+     FUNÇÃO DE ENVIO
+  ====================== */
   async function enviar() {
     setSending(true);
     setResult(null);
 
     try {
-      const res = await fetch("/api/send-1-1", {
+      const res = await fetch(`${API_URL}/api/send-1-1`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -113,12 +111,23 @@ export default function App() {
         }),
       });
 
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Erro ${res.status}: ${text}`);
+      }
+
       setResult(await res.json());
+    } catch (err) {
+      console.error("Erro ao enviar:", err);
+      alert(`Erro ao enviar: ${err.message}`);
     } finally {
       setSending(false);
     }
   }
 
+  /* ======================
+     FUNÇÃO LIMPAR
+  ====================== */
   function limpar() {
     setLinhasText("");
     setCmdsText("");
@@ -130,12 +139,7 @@ export default function App() {
 
   return (
     <div className="page">
-      <Header
-        badge={badge}
-        theme={theme}
-        toggleTheme={toggleTheme}
-        apiStatus={apiStatus}
-      />
+      <Header badge={badge} theme={theme} toggleTheme={toggleTheme} apiStatus={apiStatus} />
 
       <section className="grid2">
         <TextareaCard
@@ -166,19 +170,9 @@ export default function App() {
         fileInputRef={fileInputRef}
       />
 
-      <PreviewTable
-        preview={preview}
-        match={match}
-        totalLinhas={totalLinhas}
-        totalCmds={totalCmds}
-      />
+      <PreviewTable preview={preview} match={match} totalLinhas={totalLinhas} totalCmds={totalCmds} />
 
-      <ResultsTable
-        result={result}
-        okCount={okCount}
-        failCount={failCount}
-        items={items}
-      />
+      <ResultsTable result={result} okCount={okCount} failCount={failCount} items={items} />
     </div>
   );
 }

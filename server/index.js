@@ -9,9 +9,21 @@ const app = express();
  * =========================
  * CORS
  * =========================
+ * Permite frontend Vercel, localhost, etc.
  */
+const allowedOrigins = [
+  "https://painel-envio.vercel.app/", // Substitua pelo domínio do Vercel
+  "http://localhost:5173", // localhost Vite
+];
+
 app.use(cors({
-  origin: true,
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   methods: ["GET", "POST"],
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
@@ -29,9 +41,7 @@ const COMTELE_KEY = process.env.COMTELE_AUTH_KEY;
 const COMTELE_URL = "https://sms.comtele.com.br/api/v2/send";
 
 async function enviarSMS({ to, message, sender }) {
-  if (!COMTELE_KEY) {
-    throw new Error("COMTELE_AUTH_KEY não configurada");
-  }
+  if (!COMTELE_KEY) throw new Error("COMTELE_AUTH_KEY não configurada");
 
   const phone = String(to ?? "").replace(/\D/g, "");
   const content = String(message ?? "").trim();
