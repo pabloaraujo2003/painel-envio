@@ -1,20 +1,14 @@
 import "dotenv/config";
-import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import fetch from "node-fetch"; // GARANTE fetch no Render
 import { GoogleGenerativeAI } from "@google/generative-ai";
-
 
 const app = express();
 
 /**
  * =========================
- * CORS (CORRIGIDO)
+ * CORS
  * =========================
- * - Aceita frontend em produção (Vercel)
- * - Aceita localhost (Vite)
- * - Não quebra preview deploy da Vercel
  */
 app.use(cors({
   origin: true,
@@ -42,13 +36,8 @@ async function enviarSMS({ to, message, sender }) {
   const phone = String(to ?? "").replace(/\D/g, "");
   const content = String(message ?? "").trim();
 
-  if (!phone) {
-    throw new Error("Número inválido");
-  }
-
-  if (!content) {
-    throw new Error("Mensagem vazia");
-  }
+  if (!phone) throw new Error("Número inválido");
+  if (!content) throw new Error("Mensagem vazia");
 
   const body = {
     Receivers: phone,
@@ -102,12 +91,7 @@ app.post("/api/send-1-1", async (req, res) => {
 
     try {
       const r = await enviarSMS({ to, message, sender });
-      resultados.push({
-        index: i,
-        to,
-        ok: true,
-        response: r
-      });
+      resultados.push({ index: i, to, ok: true, response: r });
     } catch (e) {
       resultados.push({
         index: i,
@@ -140,12 +124,9 @@ app.post("/api/gemini", async (req, res) => {
       "Explique como funciona uma API em uma frase.";
 
     const result = await model.generateContent(String(prompt));
-
     res.json({ text: result.response.text() });
   } catch (err) {
-    res.status(500).json({
-      error: err?.message ?? String(err)
-    });
+    res.status(500).json({ error: err?.message ?? String(err) });
   }
 });
 
