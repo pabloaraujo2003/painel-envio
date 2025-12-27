@@ -96,6 +96,53 @@ export default function App() {
   }, [totalLinhas, totalCmds, match, diff]);
 
   /* ======================
+     FUNÇÃO DE IMPORTAR ARQUIVO
+  ====================== */
+  function handleFileImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = e.target.result;
+        if (file.name.endsWith(".csv")) {
+          const parsed = Papa.parse(data, { header: false });
+          const columns = parsed.data;
+          if (columns.length > 0) {
+            setLinhasText(columns.map((row) => row[0] || "").join("\n"));
+          }
+          if (columns.length > 0 && columns[0].length > 1) {
+            setCmdsText(columns.map((row) => row[1] || "").join("\n"));
+          }
+        } else if (file.name.endsWith(".xlsx")) {
+          const workbook = XLSX.read(data, { type: "binary" });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+          if (json.length > 0) {
+            setLinhasText(json.map((row) => row[0] || "").join("\n"));
+          }
+          if (json.length > 0 && json[0].length > 1) {
+            setCmdsText(json.map((row) => row[1] || "").join("\n"));
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao processar o arquivo:", error);
+        alert("Erro ao processar o arquivo. Verifique o formato.");
+      }
+    };
+
+    if (file.name.endsWith(".csv")) {
+      reader.readAsText(file);
+    } else if (file.name.endsWith(".xlsx")) {
+      reader.readAsBinaryString(file);
+    }
+  }
+
+
+  /* ======================
      FUNÇÃO DE ENVIO
   ====================== */
   async function enviar() {
@@ -169,6 +216,7 @@ export default function App() {
         limpar={limpar}
         enviar={enviar}
         fileInputRef={fileInputRef}
+        handleFileImport={handleFileImport}
       />
 
       <PreviewTable preview={preview} match={match} totalLinhas={totalLinhas} totalCmds={totalCmds} />
