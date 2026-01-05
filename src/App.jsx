@@ -2,6 +2,7 @@ import { useMemo, useState, useRef, useEffect } from "react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { parseLines } from "./utils";
+import { testApiConnection, sendMessages } from "./services/api"; // Import API functions
 
 import Header from "./components/Header";
 import TextareaCard from "./components/TextareaCard";
@@ -21,28 +22,20 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [apiStatus, setApiStatus] = useState("loading"); // "loading", "ok", "error"
 
-  const API_URL = import.meta.env.VITE_API_URL;
-
   /* ======================
-     TESTE DE API
+     API STATUS CHECK
   ====================== */
   useEffect(() => {
-    const testApi = async () => {
+    const checkApi = async () => {
       try {
-        await fetch(`${API_URL}/api/gemini`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: "oi" }),
-        });
+        await testApiConnection();
         setApiStatus("ok");
       } catch (error) {
         setApiStatus("error");
-        console.error("API connection test failed:", error);
       }
     };
-
-    testApi();
-  }, [API_URL]);
+    checkApi();
+  }, []);
 
   /* ======================
      THEME
@@ -150,21 +143,8 @@ export default function App() {
     setResult(null);
 
     try {
-      const res = await fetch(`${API_URL}/api/send-1-1`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          sender: sender || undefined,
-          items: items.map(({ to, message }) => ({ to, message })),
-        }),
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Erro ${res.status}: ${text}`);
-      }
-
-      setResult(await res.json());
+      const response = await sendMessages(items, sender);
+      setResult(response);
     } catch (err) {
       console.error("Erro ao enviar:", err);
       alert(`Erro ao enviar: ${err.message}`);

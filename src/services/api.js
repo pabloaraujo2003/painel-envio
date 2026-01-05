@@ -11,21 +11,45 @@ const baseUrl = getBaseUrl();
 export const fetchData = async (endpoint, options) => {
   const response = await fetch(`${baseUrl}${endpoint}`, options);
   if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
+    const errorText = await response.text();
+    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
   }
-  return response.json();
+  // Check if response is JSON before parsing
+  const contentType = response.headers.get("content-type");
+  if (contentType && contentType.indexOf("application/json") !== -1) {
+    return response.json();
+  }
+  // Return text for non-JSON responses
+  return response.text();
 };
 
-// Example usage (this function would be called from a React component)
-/*
-export const getSomeData = async () => {
+
+export const testApiConnection = async () => {
   try {
-    const data = await fetchData('/some-data');
-    console.log(data);
-    return data;
+    // Perform a HEAD request or a lightweight endpoint
+    const response = await fetch(`${baseUrl}/gemini`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: "oi" }),
+    });
+    // No need to return anything, success is implied if no error is thrown
   } catch (error) {
-    console.error("Error fetching some data:", error);
-    throw error;
+    console.error("API connection test failed:", error);
+    throw error; // Re-throw to be caught by the calling function
   }
 };
-*/
+
+export const sendMessages = async (items, sender) => {
+  const body = {
+    items: items.map(({ to, message }) => ({ to, message })),
+  };
+  if (sender) {
+    body.sender = sender;
+  }
+
+  return fetchData('/send-1-1', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+};
