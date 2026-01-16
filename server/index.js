@@ -12,7 +12,7 @@ const app = express();
  * Permite frontend Vercel, localhost, etc.
  */
 const allowedOrigins = [
-  "https://painel-envio.vercel.app/", // Substitua pelo domínio do Vercel
+  "https://painel-envio.vercel.app", // Substitua pelo domínio do Vercel
   "http://localhost:5173", // localhost Vitegit add index.js
 ];
 
