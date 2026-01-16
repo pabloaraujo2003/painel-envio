@@ -2,8 +2,8 @@
 
 const getBaseUrl = () => {
   // Use VITE_BACKEND_URL if defined (e.g., for Vercel deployments),
-  // otherwise default to '/api' for local development with Vite proxy.
-  return import.meta.env.VITE_BACKEND_URL || '/api';
+  // otherwise default to an empty string for local development with Vite proxy.
+  return import.meta.env.VITE_BACKEND_URL || '';
 };
 
 const baseUrl = getBaseUrl();
@@ -27,7 +27,7 @@ export const fetchData = async (endpoint, options) => {
 export const testApiConnection = async () => {
   try {
     // Perform a HEAD request or a lightweight endpoint
-    const response = await fetch(`${baseUrl}/gemini`, {
+    const response = await fetch(`${baseUrl}/api/gemini`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt: "oi" }),
@@ -47,7 +47,7 @@ export const sendMessages = async (items, sender) => {
     body.sender = sender;
   }
 
-  return fetchData('/send-1-1', {
+  return fetchData('/api/send-1-1', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
