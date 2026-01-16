@@ -18,6 +18,7 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
+    console.log("CORS check - Origin:", origin); // Log para depuração
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
