@@ -59,10 +59,19 @@ export default function App() {
 
   const totalLinhas = linhas.length;
   const totalCmds = comandos.length;
-  const match = totalLinhas > 0 && totalLinhas === totalCmds;
+  const match = (totalLinhas > 0 && totalLinhas === totalCmds) || (totalLinhas === 1 && totalCmds > 0);
   const diff = totalLinhas - totalCmds;
 
   const items = useMemo(() => {
+    if (totalLinhas === 1 && totalCmds > 0) {
+      const singleLine = linhas[0];
+      return Array.from({ length: totalCmds }, (_, i) => ({
+        to: singleLine,
+        message: comandos[i],
+        index: i,
+      }));
+    }
+
     const total = Math.min(totalLinhas, totalCmds, limite);
     return Array.from({ length: total }, (_, i) => ({
       to: linhas[i],
@@ -77,15 +86,19 @@ export default function App() {
     if (totalLinhas === 0 && totalCmds === 0)
       return { tone: "neutral", icon: "ℹ️", text: "Cole ou importe os dados" };
 
-    if (!match) {
-      return {
-        tone: "danger",
-        icon: "⚠️",
-        text: diff > 0 ? `Faltam ${Math.abs(diff)} comandos` : `Faltam ${Math.abs(diff)} linhas`,
-      };
+    if (match) {
+      if (totalLinhas === 1 && totalCmds > 0) {
+        return { tone: "success", icon: "✅", text: `Pronto para enviar (1 linha para ${totalCmds} comandos)` };
+      } else {
+        return { tone: "success", icon: "✅", text: "Pronto para enviar (1:1)" };
+      }
     }
 
-    return { tone: "success", icon: "✅", text: "Pronto para enviar (1:1)" };
+    return {
+      tone: "danger",
+      icon: "⚠️",
+      text: diff > 0 ? `Faltam ${Math.abs(diff)} comandos` : `Faltam ${Math.abs(diff)} linhas`,
+    };
   }, [totalLinhas, totalCmds, match, diff]);
 
   /* ======================
